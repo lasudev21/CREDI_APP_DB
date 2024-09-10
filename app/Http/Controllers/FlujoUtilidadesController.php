@@ -5,14 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\Models\FlujoUtilidade;
-
+use Carbon\Carbon;
 
 class FlujoUtilidadesController extends Controller
 {
     public function getFlujoUtilidades()
     {
         $FlujoUtilidades = FlujoUtilidade::orderBy('fecha', 'desc')->paginate(1000);
-
 
         $entrada = FlujoUtilidade::where('tipo', 1)->sum('valor');
         $salidas = FlujoUtilidade::where('tipo', 2)->sum('valor');
@@ -33,11 +32,8 @@ class FlujoUtilidadesController extends Controller
 
         $flujoCaja->save();
 
-        $flujoCaja = FlujoUtilidade::get();
-
-        return response()->json(['data' => $flujoCaja]);
+        return response()->json(['data' => []]);
     }
 
-    public function __invoke(Request $request){}
-
+    public function __invoke(Request $request) {}
 }

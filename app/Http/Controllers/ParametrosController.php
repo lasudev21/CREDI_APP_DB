@@ -92,12 +92,10 @@ class ParametrosController extends Controller
         DB::beginTransaction();
 
         foreach ($input['cambios'] as $key => $value) {
-            if (isset($value['updated'])) {
-                $parametro = ParametrosDetalle::find($value['id']);
-                $parametro->valor = $value['valor'];
-                $parametro->estado = $value['estado'];
-                $parametro->save();
-            }
+            $parametro = ParametrosDetalle::find($value['id']);
+            $parametro->valor = $value['valor'];
+            $parametro->estado = $value['estado'];
+            $parametro->save();
         }
 
         DB::commit();
@@ -105,7 +103,5 @@ class ParametrosController extends Controller
         return response()->json(['data' => 'OK']);
     }
 
-    public function __invoke(Request $request)
-    {
-    }
+    public function __invoke(Request $request) {}
 }

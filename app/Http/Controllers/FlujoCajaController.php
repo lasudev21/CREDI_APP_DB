@@ -35,11 +35,8 @@ class FlujoCajaController extends Controller
 
         $flujoCaja->save();
 
-        $flujoCaja = FlujoCaja::get();
-
-        return response()->json(['data' => $flujoCaja]);
+        return response()->json(['data' => []]);
     }
 
-    public function __invoke(Request $request){}
-
+    public function __invoke(Request $request) {}
 }
