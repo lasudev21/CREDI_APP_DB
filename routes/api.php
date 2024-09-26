@@ -19,8 +19,8 @@ header('Access-Control-Allow-Headers: Authorization, Content-Type');
 
 Route::group(['middleware' => ['api']], function () {
 
-    Route::group(['prefix' => 'account'], function () {
-        Route::post('signin', [UserController::class, 'postSignIn']);
+    Route::group(['prefix' => 'auth'], function () {
+        Route::post('login', [UserController::class, 'postSignIn']);
     });
 
     Route::group(['middleware' => 'jwt.auth'], function () {
@@ -53,7 +53,7 @@ Route::group(['middleware' => ['api']], function () {
 
         Route::group(['prefix' => 'parametros'], function () {
             Route::get('/', [ParametrosController::class, 'getParametros']);
-            Route::get('/periodos', [ParametrosController::class, 'getPeriodos']);
+            Route::get('/datosRutas', [ParametrosController::class, 'getDatosRutas']);
             Route::get('/{nombre?}', [ParametrosController::class, 'getListaParametros']);
             Route::post('/', [ParametrosController::class, 'postParametros']);
             Route::put('/', [ParametrosController::class, 'putParametros']);

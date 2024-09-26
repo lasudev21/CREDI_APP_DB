@@ -39,11 +39,37 @@ class ParametrosController extends Controller
         return response()->json($parametrosL);
     }
 
-
-
-    public function getPeriodos()
+    public function getDatosRutas()
     {
         $parametros = Parametro::with('parametros_detalles')->where('nombre', 'Modos de pago')->get();
+
+        $modosPago = array();
+        foreach ($parametros as $key => $value) {
+            foreach ($value->parametros_detalles as $key1 => $valueP) {
+                $modosPago[] = array(
+                    'label' => $valueP['valor'],
+                    'value' => $valueP['id_interno']
+                );
+            }
+        }
+
+        $parametros = Parametro::with(['parametros_detalles' => function ($v) {
+            $v->where('estado', true);
+        }])->where('nombre', 'Modalidades')->get();
+
+        $dias = array();
+        foreach ($parametros as $key => $value) {
+            foreach ($value->parametros_detalles as $key1 => $valueP) {
+                $dias[] = array(
+                    'label' => $valueP['valor'],
+                    'value' => $valueP['id_interno']
+                );
+            }
+        }
+
+        $parametros = Parametro::with(['parametros_detalles' => function ($v) {
+            $v->where('estado', true);
+        }])->where('nombre', 'Rutas')->get();
 
         $rutas = array();
         foreach ($parametros as $key => $value) {
@@ -55,21 +81,7 @@ class ParametrosController extends Controller
             }
         }
 
-        $obs_dias = Parametro::with(['parametros_detalles' => function ($v) {
-            $v->where('estado', true);
-        }])->where('nombre', 'Modalidades')->get();
-
-        $dias = array();
-        foreach ($obs_dias as $key => $value) {
-            foreach ($value->parametros_detalles as $key1 => $valueP) {
-                $dias[] = array(
-                    'label' => $valueP['valor'],
-                    'value' => $valueP['id_interno']
-                );
-            }
-        }
-
-        return response()->json(['data' => $rutas, 'dias' => $dias]);
+        return response()->json(['modosPago' => $modosPago, 'dias' => $dias, 'rutas' => $rutas]);
     }
 
     public function postParametros(Requests\ParametroRequest $request)

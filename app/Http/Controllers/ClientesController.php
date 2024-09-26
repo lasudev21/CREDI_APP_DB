@@ -9,6 +9,7 @@ use App\Models\Cliente;
 use App\Models\Credito;
 use App\Models\ClientesReferencia;
 use App\Models\CreditosDetalle;
+use App\Models\ParametrosDetalle;
 use Illuminate\Support\Facades\Date;
 
 class ClientesController extends Controller
@@ -45,22 +46,20 @@ class ClientesController extends Controller
 
         foreach ($input["clientes_referencias"] as $key => $value) {
             $clienteRef = new ClientesReferencia;
-            if (isset($value['new'])) {
-                if (!$value['new']) {
-                    $clienteRef = ClientesReferencia::find($value["id"]);
-                }
-                $clienteRef->cliente_id = $cliente->id;
-                $clienteRef->nombre = $value['nombre'];
-                $clienteRef->direccion = $value['direccion'];
-                $clienteRef->barrio = $value['barrio'];
-                $clienteRef->tipo_referencia = $value['tipo_referencia'];
-                $clienteRef->telefono = $value['telefono'];
-                $clienteRef->parentesco = $value['parentesco'];
-                $clienteRef->save();
+            if ($value['id'] !== 0) {
+                $clienteRef = ClientesReferencia::find($value["id"]);
             }
+            $clienteRef->cliente_id = $cliente->id;
+            $clienteRef->nombre = $value['nombre'];
+            $clienteRef->direccion = $value['direccion'];
+            $clienteRef->barrio = $value['barrio'];
+            $clienteRef->tipo_referencia = $value['tipo_referencia'];
+            $clienteRef->telefono = $value['telefono'];
+            $clienteRef->parentesco = $value['parentesco'];
+            $clienteRef->save();
         }
 
-        $clientes = Cliente::with('clientes_referencias')->with('creditos')->get();
+        $clientes = Cliente::with('clientes_referencias')->orderBy('created_at', 'DESC')->get();
         $ca = Credito::where('activo', 1)->count();
         return response()->json(['data' => $clientes, 'creditosActivos' => $ca]);
     }
@@ -89,23 +88,21 @@ class ClientesController extends Controller
 
         foreach ($input["clientes_referencias"] as $key => $value) {
             $clienteRef = new ClientesReferencia;
-            if (isset($value['new'])) {
-                if (!$value['new']) {
-                    $clienteRef = ClientesReferencia::find($value["id"]);
-                }
-                $clienteRef->cliente_id = $cliente->id;
-                $clienteRef->nombre = $value['nombre'];
-                $clienteRef->direccion = $value['direccion'];
-                $clienteRef->barrio = $value['barrio'];
-                $clienteRef->tipo_referencia = $value['tipo_referencia'];
-                $clienteRef->telefono = $value['telefono'];
-                $clienteRef->parentesco = $value['parentesco'];
-                $clienteRef->save();
+            if ($value['id'] !== 0) {
+                $clienteRef = ClientesReferencia::find($value["id"]);
             }
+            $clienteRef->cliente_id = $cliente->id;
+            $clienteRef->nombre = $value['nombre'];
+            $clienteRef->direccion = $value['direccion'];
+            $clienteRef->barrio = $value['barrio'];
+            $clienteRef->tipo_referencia = $value['tipo_referencia'];
+            $clienteRef->telefono = $value['telefono'];
+            $clienteRef->parentesco = $value['parentesco'];
+            $clienteRef->save();
         }
 
         $cliente->save();
-        $clientes = Cliente::with('clientes_referencias')->with('creditos')->get();
+        $clientes = Cliente::with('clientes_referencias')->orderBy('created_at', 'DESC')->get();
         $ca = Credito::where('activo', 1)->count();
         return response()->json(['data' => $clientes, 'creditosActivos' => $ca]);
     }
@@ -120,7 +117,7 @@ class ClientesController extends Controller
             return response()->json(['Error' => 'El cliente tiene actualmente un crédito activo'], 423);
         }
 
-        $clientes = Cliente::with('clientes_referencias')->with('creditos')->get();
+        $clientes = Cliente::with('clientes_referencias')->orderBy('created_at', 'DESC')->get();
         $ca = Credito::where('activo', 1)->count();
         return response()->json(['data' => $clientes, 'creditosActivos' => $ca]);
     }
@@ -128,6 +125,9 @@ class ClientesController extends Controller
     public function getDetallesCredito($id)
     {
         $creditos = Credito::where('cliente_id', $id)->with('creditos_detalles')->with('creditos_renovaciones')->get();
+        if ($creditos->count() > 0)
+            $ruta = ParametrosDetalle::where([['parametro_id', 5], ['id_interno', $creditos->first()->ruta_id]])->get();
+
         $response = [];
         foreach ($creditos as $credito) {
             $fecha = new Date;
@@ -144,6 +144,7 @@ class ClientesController extends Controller
                 "ModDias" => $credito['mod_dias'],
                 "ObsDia" => $credito['obs_dia'],
                 "RutaId" => $credito['ruta_id'],
+                "Ruta" => $ruta->first()->valor,
                 "ValorPrestamo" => $credito['valor_prestamo'],
                 "Finalizacion" => $credito['activo'] ? null : $fecha->fecha_abono,
                 "DetallesCredito" => $credito['creditos_detalles']
@@ -153,7 +154,5 @@ class ClientesController extends Controller
         return response()->json($response);
     }
 
-    public function __invoke(Request $request)
-    {
-    }
+    public function __invoke(Request $request) {}
 }

@@ -12,8 +12,8 @@ use App\Models\User;
 use App\Models\ParametrosDetalle;
 use App\Models\RolesPermiso;
 use App\Models\RolesDetalle;
-use JWTAuth;
-use Hash as Hash;
+use Illuminate\Support\Facades\Hash as FacadesHash;
+use Tymon\JWTAuth\Facades\JWTAuth as FacadesJWTAuth;
 
 class UserController extends Controller
 {
@@ -68,9 +68,9 @@ class UserController extends Controller
 
             $rolesPermiso = RolesPermiso::where([['rol_id', $userDB->rol], ['ver', true]])->get();
 
-            $hashed = Hash::make($credentials['password']);
-            if (Hash::check($userDB->password, $hashed)) {
-                $token = JWTAuth::fromUser($userDB);
+            $hashed = FacadesHash::make($credentials['password']);
+            if (FacadesHash::check($userDB->password, $hashed)) {
+                $token = FacadesJWTAuth::fromUser($userDB);
                 return response()->json(['token' => $token, 'id' => $userDB->id, 'rol' => $rolesPermiso, 'userData' => $UserResponse]);
             }
         }

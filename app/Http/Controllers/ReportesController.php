@@ -9,6 +9,7 @@ use App\Models\FlujoUtilidade;
 use App\Models\FlujoCaja;
 use App\Models\Credito;
 use App\Models\CreditosRenovacione;
+use App\Models\Parametro;
 
 class ReportesController extends Controller
 {
@@ -32,19 +33,31 @@ class ReportesController extends Controller
             ->get();
 
         $nuevos = Credito::whereBetween('inicio_credito', [$FI, $FF])->get();
-        $renovaciones = CreditosRenovacione::with(['credito' => function ($query){
+        $renovaciones = CreditosRenovacione::with(['credito' => function ($query) {
             $query->select('id', 'ruta_id');
         }])->whereBetween('fecha', [$FI, $FF])->get();
+
+        $parametros = Parametro::with(['parametros_detalles' => function ($v) {}])->where('nombre', 'Rutas')->get();
+
+        $rutas = array();
+        foreach ($parametros as $key => $value) {
+            foreach ($value->parametros_detalles as $key1 => $valueP) {
+                $rutas[] = array(
+                    'label' => $valueP['valor'],
+                    'value' => $valueP['id_interno']
+                );
+            }
+        }
 
         return response()->json([
             'data' => $cobradores,
             'utilidades' => $utilidades,
             'recaudos' => $recaudos,
             'nuevos' => $nuevos,
-            'renovaciones' => $renovaciones
+            'renovaciones' => $renovaciones,
+            'rutas' => $rutas
         ]);
     }
 
-    public function __invoke(Request $request){}
-
+    public function __invoke(Request $request) {}
 }
