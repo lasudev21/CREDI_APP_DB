@@ -147,34 +147,40 @@ class CreditosController extends Controller
             } else {
                 $credito['orden'] = $orden;
                 $orden++;
+
                 if ($input['CalculoMoras']) {
-                    if ($cuotas['Cuota'] == null) {
-                        $credito['mora'] = $credito['congelar'] > 0 ? $credito['mora'] : $credito['mora'] + 1;
+                    if ($cuotas['Mora'] !== null) {
+                        $credito['mora'] = $cuotas['Mora'];
                         $credito['congelar'] = $credito['congelar'] <= 0 ? 0 : $credito['congelar'] - 1;
                     } else {
-                        switch ($credito['modalidad']) {
-                            case 1:
-                                if ($cuotas['Cuota'] < $credito['mod_cuota'])
-                                    $credito['mora'] = $credito['mora'];
-                                else {
-                                    $moraDias = $cuotas['Cuota'] / $credito['mod_cuota'];
-                                    if ($moraDias >= 2) {
-                                        if ($credito['mora'] > 0) {
-                                            $credito['congelar'] = $credito['congelar'] > 0 ? $credito['congelar'] - ($moraDias - 1) : ($credito['mora'] - ($moraDias - 1));
-                                            $credito['congelar'] = $credito['congelar'] < 0 ? 0 : $credito['congelar'];
-                                            $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
-                                        } else {
-                                            $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
+                        if ($cuotas['Cuota'] == null) {
+                            $credito['mora'] = $credito['congelar'] > 0 ? $credito['mora'] : $credito['mora'] + 1;
+                            $credito['congelar'] = $credito['congelar'] <= 0 ? 0 : $credito['congelar'] - 1;
+                        } else {
+                            switch ($credito['modalidad']) {
+                                case 1:
+                                    if ($cuotas['Cuota'] < $credito['mod_cuota'])
+                                        $credito['mora'] = $credito['mora'];
+                                    else {
+                                        $moraDias = $cuotas['Cuota'] / $credito['mod_cuota'];
+                                        if ($moraDias >= 2) {
+                                            if ($credito['mora'] > 0) {
+                                                $credito['congelar'] = $credito['congelar'] > 0 ? $credito['congelar'] - ($moraDias - 1) : ($credito['mora'] - ($moraDias - 1));
+                                                $credito['congelar'] = $credito['congelar'] < 0 ? 0 : $credito['congelar'];
+                                                $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
+                                            } else {
+                                                $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
+                                            }
                                         }
                                     }
-                                }
-                                break;
-                            case 2:
-                                if ($cuotas['Cuota'] < $credito['mod_cuota'])
-                                    $credito['mora'] = $credito['mora'] + 1;
-                                else
-                                    $credito['mora'] = 0;
-                                break;
+                                    break;
+                                case 2:
+                                    if ($cuotas['Cuota'] < $credito['mod_cuota'])
+                                        $credito['mora'] = $credito['mora'] + 1;
+                                    else
+                                        $credito['mora'] = 0;
+                                    break;
+                            }
                         }
                     }
                 }

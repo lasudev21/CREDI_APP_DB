@@ -124,7 +124,7 @@ class ClientesController extends Controller
 
     public function getDetallesCredito($id)
     {
-        $creditos = Credito::where('cliente_id', $id)->with('creditos_detalles')->with('creditos_renovaciones')->get();
+        $creditos = Credito::where('cliente_id', $id)->with('creditos_detalles.user')->with('creditos_renovaciones')->get();
         if ($creditos->count() > 0)
             $ruta = ParametrosDetalle::where([['parametro_id', 5], ['id_interno', $creditos->first()->ruta_id]])->get();
 
