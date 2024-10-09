@@ -27,45 +27,24 @@ class CreditosController extends Controller
 
     public function getClientes()
     {
-        $clientes = Cliente::where('estado', true)->get();
+        $clientes = Cliente::where('estado', true)->orderBy('created_at', 'DESC')->get();
         return response()->json(['data' => $clientes]);
     }
 
     public function postCredito(Request $request)
     {
-        DB::beginTransaction();
         $inputs = $request->all();
         $id = $inputs[0]['RutaId'];
-        $cr = Credito::where([['ruta_id', $id], ['activo', true]])->get();
-        $count = $cr->count();
         $ids = array_column($inputs, 'ClienteId');
 
-        if (!Credito::CreditosUsuarioActivo($ids)) {
-            foreach ($inputs as $input) {
-                $count = $count + 1;
-                $credito = new Credito();
-                $credito->cliente_id = $input['ClienteId'];
-                $credito->ruta_id = $input['RutaId'];
-                $credito->inicio_credito = $input['InicioCredito'];
-                $credito->valor_prestamo = $input['ValorPrestamo'];
-                $credito->mod_cuota = $input['ModCuota'];
-                $credito->mod_dias = $input['ModDias'];
-                $credito->observaciones = $input['Observaciones'];
-                $credito->modalidad = $input['modalidad'];
-                $credito->obs_dia = $input['ObsDia'];
-                $credito->orden = $count;
-                $credito->save();
-            }
-        } else {
+        $status = false;
+        if (Credito::CreditosUsuarioActivo($ids)) {
             return response()->json(['Error' => 'Uno de los clientes tiene actualmente un crédito activo'], 423);
+        } else {
+            $status = true;
         }
 
-        DB::commit();
-
-        $creditos = Credito::getCreditos($id);
-        $cobrador = User::where([['ruta', $id], ['login', false]])->first();
-
-        return response()->json(['data' => $creditos, 'cobrador' => $cobrador]);
+        return response()->json(['status' => $status]);
     }
 
     public function postRenovaciones($id)
@@ -90,15 +69,14 @@ class CreditosController extends Controller
         $input = $request->all();
         $utilidad = 0;
         $orden = 1;
+
+        error_log("Consulta créditos");
         $creditos = Credito::where([['ruta_id', $input['IdRuta']], ['activo', true]])
             ->with(['creditos_detalles' => function ($v) {
-                $v->where('estado', true);
+                $v->where('estado', true)
+                    ->orderBy('fecha_abono', 'asc');
             }])
             ->get();
-
-        // $idsCreditos = array_column($creditos->ToArray(), 'id');
-        // $creditosRenovaciones = CreditosRenovacione::whereIn('credito_id', $idsCreditos)->get();
-        // $creditosDetalles = CreditosDetalle::whereIn('credito_id', $idsCreditos)->where('estado', true)->get();
 
         DB::beginTransaction();
 
@@ -112,10 +90,43 @@ class CreditosController extends Controller
         }
 
         //Agregamos los abonos
+        error_log("Empieza abonos");
         foreach ($input['Abonos'] as $cuotas) {
             $estado = true;
-            $credito = $creditos->find($cuotas['Id']);
+            if ($cuotas['Nuevo']) {
+                $credito = new Credito();
+                $credito->cliente_id = $cuotas['Nuevo']['ClienteId'];
+                $credito->ruta_id = $cuotas['Nuevo']['RutaId'];
+                $credito->inicio_credito = $cuotas['Nuevo']['InicioCredito'];
+                $credito->valor_prestamo = $cuotas['Nuevo']['ValorPrestamo'];
+                $credito->mod_cuota = $cuotas['Nuevo']['ModCuota'];
+                $credito->mod_dias = $cuotas['Nuevo']['ModDias'];
+                $credito->observaciones = $cuotas['Nuevo']['Observaciones'];
+                $credito->modalidad = $cuotas['Nuevo']['modalidad'];
+                $credito->obs_dia = $cuotas['Nuevo']['ObsDia'];
+                $credito->orden = $cuotas['Nuevo']['Orden'];
+                $credito->mora = 0;
+                $credito->save();
+            } else {
+                $credito = $creditos->find($cuotas['Id']);
+            }
 
+            //Eliminamos la ultima cuota si el usuario lo decide
+            if ($cuotas["ReversarCuota"]) {
+                $ultimoDetalle = $credito["creditos_detalles"]->last();
+                if ($ultimoDetalle) {
+                    $ultimoDetalle->delete();
+                }
+            }
+
+            //Eliminamos la ultima cuota si el usuario lo decide
+            if ($cuotas["Modificado"]) {
+                $credito->valor_prestamo = $cuotas['ModificadoData']['valor_prestamo'];
+                $credito->mod_cuota = $cuotas['ModificadoData']['mod_cuota'];
+                $credito->mod_dias = $cuotas['ModificadoData']['mod_dias'];
+            }
+
+            //Agregamos las cuotas cuando el valor viene
             if ($cuotas['Cuota'] > 0) {
                 $moraDias = ($cuotas['Cuota'] / $credito['mod_cuota']) - 1;
                 $contar = $moraDias >= $credito['mora'] ? true : false;
@@ -129,7 +140,6 @@ class CreditosController extends Controller
                 $cd->save();
             }
 
-
             $cdS = $credito["creditos_detalles"];
             $VT = $credito["mod_cuota"] * $credito["mod_dias"];
             $VTF = array_sum(array_column($cdS->toArray(), 'abono')) + ($cuotas["Congelar"] == 0 ? $cuotas["Cuota"] : 0);
@@ -138,6 +148,8 @@ class CreditosController extends Controller
                 $estado = false;
 
             $credito['obs_dia'] = $cuotas['Obs'];
+            $credito['observaciones'] = $cuotas['Observaciones'];
+
             $credito['activo'] = $estado;
 
             if (!$estado) {
@@ -148,38 +160,40 @@ class CreditosController extends Controller
                 $credito['orden'] = $orden;
                 $orden++;
 
-                if ($input['CalculoMoras']) {
-                    if ($cuotas['Mora'] !== null) {
-                        $credito['mora'] = $cuotas['Mora'];
-                        $credito['congelar'] = $credito['congelar'] <= 0 ? 0 : $credito['congelar'] - 1;
-                    } else {
-                        if ($cuotas['Cuota'] == null) {
-                            $credito['mora'] = $credito['congelar'] > 0 ? $credito['mora'] : $credito['mora'] + 1;
+                if (!$cuotas['Nuevo']) {
+                    if ($input['CalculoMoras']) {
+                        if ($cuotas['Mora'] !== null) {
+                            $credito['mora'] = $cuotas['Mora'];
                             $credito['congelar'] = $credito['congelar'] <= 0 ? 0 : $credito['congelar'] - 1;
                         } else {
-                            switch ($credito['modalidad']) {
-                                case 1:
-                                    if ($cuotas['Cuota'] < $credito['mod_cuota'])
-                                        $credito['mora'] = $credito['mora'];
-                                    else {
-                                        $moraDias = $cuotas['Cuota'] / $credito['mod_cuota'];
-                                        if ($moraDias >= 2) {
-                                            if ($credito['mora'] > 0) {
-                                                $credito['congelar'] = $credito['congelar'] > 0 ? $credito['congelar'] - ($moraDias - 1) : ($credito['mora'] - ($moraDias - 1));
-                                                $credito['congelar'] = $credito['congelar'] < 0 ? 0 : $credito['congelar'];
-                                                $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
-                                            } else {
-                                                $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
+                            if ($cuotas['Cuota'] == null) {
+                                $credito['mora'] = $credito['congelar'] > 0 ? $credito['mora'] : $credito['mora'] + 1;
+                                $credito['congelar'] = $credito['congelar'] <= 0 ? 0 : $credito['congelar'] - 1;
+                            } else {
+                                switch ($credito['modalidad']) {
+                                    case 1:
+                                        if ($cuotas['Cuota'] < $credito['mod_cuota'])
+                                            $credito['mora'] = $credito['mora'];
+                                        else {
+                                            $moraDias = $cuotas['Cuota'] / $credito['mod_cuota'];
+                                            if ($moraDias >= 2) {
+                                                if ($credito['mora'] > 0) {
+                                                    $credito['congelar'] = $credito['congelar'] > 0 ? $credito['congelar'] - ($moraDias - 1) : ($credito['mora'] - ($moraDias - 1));
+                                                    $credito['congelar'] = $credito['congelar'] < 0 ? 0 : $credito['congelar'];
+                                                    $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
+                                                } else {
+                                                    $credito['mora'] = (int)($credito['mora'] - ($moraDias - 1));
+                                                }
                                             }
                                         }
-                                    }
-                                    break;
-                                case 2:
-                                    if ($cuotas['Cuota'] < $credito['mod_cuota'])
-                                        $credito['mora'] = $credito['mora'] + 1;
-                                    else
-                                        $credito['mora'] = 0;
-                                    break;
+                                        break;
+                                    case 2:
+                                        if ($cuotas['Cuota'] < $credito['mod_cuota'])
+                                            $credito['mora'] = $credito['mora'] + 1;
+                                        else
+                                            $credito['mora'] = 0;
+                                        break;
+                                }
                             }
                         }
                     }

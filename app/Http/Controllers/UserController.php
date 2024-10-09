@@ -8,6 +8,7 @@ use App\Http\Requests;
 use App\Http\Responses\UsersResponse;
 use App\Http\Responses\RolesPermisoResponse;
 use App\Http\Responses\RolesDetallesResponse;
+use App\Models\Parametro;
 use App\Models\User;
 use App\Models\ParametrosDetalle;
 use App\Models\RolesPermiso;
@@ -71,6 +72,7 @@ class UserController extends Controller
             $hashed = FacadesHash::make($credentials['password']);
             if (FacadesHash::check($userDB->password, $hashed)) {
                 $token = FacadesJWTAuth::fromUser($userDB);
+                // error_log($token);
                 return response()->json(['token' => $token, 'id' => $userDB->id, 'rol' => $rolesPermiso, 'userData' => $UserResponse]);
             }
         }
@@ -79,72 +81,73 @@ class UserController extends Controller
     }
 
     public function getUsers()
-	{
-		$personas = User::get();
-		return response()->json(['data' => $personas]);
-	}
-
-    public function saveUser(Requests\UserRequest $request)
-	{
-		$input = $request->all();
-		$persona = new User;
-		$persona->nombres = $input["nombres"];
-		$persona->apellidos = $input["apellidos"];
-		$persona->telefono1 = $input["telefono1"];
-		$persona->telefono2 = $input["telefono2"];
-		$persona->login = $input["login"];
-		if ($input["login"]) {
-			$persona->email = $input["email"];
-			$persona->username = $input["username"];
-			$persona->rol = $input["rol"];
-			if ($request->has('password')) {
-				$persona->password = $input["password"];
-			}
-		} else {
-			$persona->ruta = $input["ruta"];
-		}
-
-		$persona->save();
-		$personas = User::get();
-
-		return response()->json(['data' => $personas]);
-	}
-
-	public function updateUser(Requests\UserRequest $request)
-	{
-		$input = $request->all();
-
-		$persona = User::find($input["id"]);
-
-		$persona->nombres = $input["nombres"];
-		$persona->apellidos = $input["apellidos"];
-		$persona->telefono1 = $input["telefono1"];
-		$persona->telefono2 = $input["telefono2"];
-		$persona->login = $input["login"];
-		if ($input["login"]) {
-			$persona->email = $input["email"];
-			$persona->username = $input["username"];
-			$persona->rol = $input["rol"];
-			if ($request->has('password')) {
-				$persona->password = $input["password"];
-			}
-		} else {
-			$persona->ruta = $input["ruta"];
-		}
-
-		$persona->save();
-		$personas = User::get();
-
-		return response()->json(['data' => $personas]);
-	}
-
-    public function changePassword(Requests\PasswordResetRequest $request){
-        $input = $request->all();
-
-		$persona = User::find($input["userId"]);
-		$persona->password = $input["password"];
-		$persona->save();
+    {
+        $personas = User::get();
+        return response()->json(['data' => $personas]);
     }
 
-    public function __invoke(Request $request){}
+    public function saveUser(Requests\UserRequest $request)
+    {
+        $input = $request->all();
+        $persona = new User;
+        $persona->nombres = $input["nombres"];
+        $persona->apellidos = $input["apellidos"];
+        $persona->telefono1 = $input["telefono1"];
+        $persona->telefono2 = $input["telefono2"];
+        $persona->login = $input["login"];
+        if ($input["login"]) {
+            $persona->email = $input["email"];
+            $persona->username = $input["username"];
+            $persona->rol = $input["rol"];
+            if ($request->has('password')) {
+                $persona->password = $input["password"];
+            }
+        } else {
+            $persona->ruta = $input["ruta"];
+        }
+
+        $persona->save();
+        $personas = User::get();
+
+        return response()->json(['data' => $personas]);
+    }
+
+    public function updateUser(Requests\UserRequest $request)
+    {
+        $input = $request->all();
+
+        $persona = User::find($input["id"]);
+
+        $persona->nombres = $input["nombres"];
+        $persona->apellidos = $input["apellidos"];
+        $persona->telefono1 = $input["telefono1"];
+        $persona->telefono2 = $input["telefono2"];
+        $persona->login = $input["login"];
+        if ($input["login"]) {
+            $persona->email = $input["email"];
+            $persona->username = $input["username"];
+            $persona->rol = $input["rol"];
+            if ($request->has('password')) {
+                $persona->password = $input["password"];
+            }
+        } else {
+            $persona->ruta = $input["ruta"];
+        }
+
+        $persona->save();
+        $personas = User::get();
+
+        return response()->json(['data' => $personas]);
+    }
+
+    public function changePassword(Requests\PasswordResetRequest $request)
+    {
+        $input = $request->all();
+
+        $persona = User::find($input["userId"]);
+        $persona->password = $input["password"];
+        $persona->save();
+    }
+
+    public function __invoke(Request $request) {}
 }

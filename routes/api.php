@@ -10,6 +10,7 @@ use App\Http\Controllers\RolesController;
 use App\Http\Controllers\CreditosController;
 use App\Http\Controllers\FlujoCajaController;
 use App\Http\Controllers\FlujoUtilidadesController;
+use App\Http\Controllers\NominaController;
 use App\Http\Controllers\ReportesController;
 
 // header('Access-Control-Allow-Origin: *');
@@ -80,6 +81,13 @@ Route::group(['middleware' => ['api']], function () {
 
         Route::group(['prefix' => 'reportes'], function () {
             Route::get('/coteos', [ReportesController::class, 'getCoteos']);
+        });
+
+        Route::group(['prefix' => 'nomina'], function () {
+            Route::post('/', [NominaController::class, 'postNomina']);
+            Route::post('/verNomina', [NominaController::class, 'getNomina']);
+            Route::post('/cobrador', [NominaController::class, 'postCobrador']);
+            Route::get('/cobradores', [NominaController::class, 'getCobradores']);
         });
     });
 });

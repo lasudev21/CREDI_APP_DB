@@ -19,6 +19,7 @@ class addCuotasRequest extends Request
             'IdRuta' => 'required',
             'Renovaciones' => '',
             'Eliminados' => '',
+            'Nuevos' => '',
             'FlujoCaja' => 'required',
             'Abonos' => '',
             'User' => 'required'

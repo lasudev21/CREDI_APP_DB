@@ -147,6 +147,7 @@ class ClientesController extends Controller
                 "Ruta" => $ruta->first()->valor,
                 "ValorPrestamo" => $credito['valor_prestamo'],
                 "Finalizacion" => $credito['activo'] ? null : $fecha->fecha_abono,
+                "Observaciones" => $credito['observaciones'],
                 "DetallesCredito" => $credito['creditos_detalles']
             ];
             array_push($response, $add);
