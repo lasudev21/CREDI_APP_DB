@@ -11,7 +11,9 @@ use App\Models\User;
 use App\Models\FlujoCaja;
 use App\Models\FlujoUtilidade;
 use App\Models\Coteo;
-
+use App\Models\Nomina;
+use App\Models\NominaCobrador;
+use App\Models\Vale;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -128,6 +130,14 @@ class CreditosController extends Controller
 
             //Agregamos las cuotas cuando el valor viene
             if ($cuotas['Cuota'] > 0) {
+                //Buscamos si el credito tiene renovaciones y obtenemos el último
+                $lastcr = CreditosRenovacione::where([
+                    ['credito_id',  $cuotas['Id']],
+                    ['estado', true]
+                ])->latest('fecha')
+                    ->first();
+
+                //Agregamos la renovación
                 $moraDias = ($cuotas['Cuota'] / $credito['mod_cuota']) - 1;
                 $contar = $moraDias >= $credito['mora'] ? true : false;
                 $cd = new CreditosDetalle;
@@ -137,6 +147,10 @@ class CreditosController extends Controller
                 $cd->usuario_id = $input['User'];
                 $cd->estado = true;
                 $cd->contar = $contar;
+                if ($lastcr) {
+                    $cd->renovacion_id = $lastcr->id;
+                }
+
                 $cd->save();
             }
 
@@ -156,6 +170,25 @@ class CreditosController extends Controller
                 $credito['mora'] = 0;
                 $credito['orden'] = null;
                 $utilidad = $utilidad + ($VT - $credito['ValorPrestamo']);
+
+                //Cuando cierra el credito cierra todas renovaciones
+                $lastcr = CreditosRenovacione::where([
+                    ['credito_id',  $cuotas['Id']],
+                    ['estado', true]
+                ])->latest('fecha')->first();
+
+                if ($lastcr) {
+                    $lastcr->estado = false;
+                    $lastcr->save();
+                }
+
+                //cerramos tambien los detalles
+                $allcd = CreditosDetalle::where([['credito_id', $cuotas['Id']],  ['estado', true]])->get();
+                foreach ($allcd as $cd) {
+                    $cd['estado'] = false;
+                    $cd['contar'] = false;
+                    $cd->save();
+                }
             } else {
                 $credito['orden'] = $orden;
                 $orden++;
@@ -204,16 +237,17 @@ class CreditosController extends Controller
         }
 
         //Si hay renovaciones reseteamos el credito
+        error_log("Empieza renovaciones");
         foreach ($input['Renovaciones'] as $renovacion) {
             //Cambiamos de estado todas las renovaciones
-            $lcr = CreditosRenovacione::where([['credito_id', $renovacion['Id']], ['estado', true]]);
+            $lcr = CreditosRenovacione::where([['credito_id', $renovacion['Id']], ['estado', true]])->get();
             foreach ($lcr as $cr) {
                 $cr['estado'] = false;
                 $cr->save();
             }
 
             //Cambiamos el estado a los detalles
-            $lcd = CreditosDetalle::where([['credito_id', $renovacion['Id']],  ['estado', true]]);
+            $lcd = CreditosDetalle::where([['credito_id', $renovacion['Id']],  ['estado', true]])->get();
             foreach ($lcd as $cd) {
                 $cd['estado'] = false;
                 $cd['contar'] = false;
@@ -228,6 +262,8 @@ class CreditosController extends Controller
             $newCR->estado = true;
             $newCR->fecha = Carbon::now()->toDateString();
             $newCR->save();
+            error_log($newCR['id']);
+
 
             $uC = $creditos->find($renovacion['Id']);
             $uC->modalidad = $renovacion['Modalidad'];
@@ -244,6 +280,81 @@ class CreditosController extends Controller
             $fc->descripcion = "Cobros ruta " . $request['IdRuta'];
             $fc->tipo = 1;
             $fc->valor = $request['FlujoCaja']['Entrada'];
+            $fc->fecha = Carbon::now()->toDateString();
+            $fc->save();
+        }
+
+        //Agregamos EL Vale
+        if ($request['Vale'] > 0) {
+            $fc = new FlujoCaja;
+            $fc->descripcion = "Vale ruta " . $request['IdRuta'];
+            $fc->tipo = 2;
+            $fc->valor = $request['Vale'];
+            $fc->fecha = Carbon::now()->toDateString();
+            $fc->save();
+
+
+            $year = Carbon::now()->year;
+            $month = Carbon::now()->month;
+            $nomina = Nomina::where([['anio', $year], ['mes', $month]])->get();
+
+            if ($nomina->isNotEmpty()) {
+                //Buscamos la NominaCobrador
+                $newNom = NominaCobrador::where([['cobrador_id', $request['Cobrador']['id']], ['nomina_id', $nomina->first()->id]])->get();
+
+                if ($newNom->isNotEmpty()) {
+                    $NomCob = $newNom->first();
+                } else {
+                    $NomCob = new NominaCobrador();
+                    $NomCob->cobrador_id = $request['Cobrador']['id'];
+                    $NomCob->nomina_id = $nomina->first()->id;
+                    $NomCob->salario = 0;
+                    $NomCob->dias_laborados = 0;
+                    $NomCob->eps = 0;
+                    $NomCob->ahorro = 0;
+                    $NomCob->save();
+                }
+
+                //Agregamos un nuevo registro de Vale
+                $vales = new Vale();
+                $vales->nomina_cobrador_id = $NomCob->id;
+                $vales->valor = $request['Vale'];
+                $vales->descripcion = "Vale ruta " . $request['IdRuta'];
+                $vales->fecha = Carbon::now()->toDateString();
+                $vales->flujo_caja_id = $fc->id;
+                $vales->save();
+            } else {
+                $newNom = new Nomina();
+                $newNom->anio = $year;
+                $newNom->mes = $month;
+                $newNom->save();
+
+                $NomCob = new NominaCobrador();
+                $NomCob->cobrador_id = $request['Cobrador']['id'];
+                $NomCob->nomina_id = $newNom->id;
+                $NomCob->salario = 0;
+                $NomCob->dias_laborados = 0;
+                $NomCob->eps = 0;
+                $NomCob->ahorro = 0;
+
+                $NomCob->save();
+
+                $vales = new Vale();
+                $vales->nomina_cobrador_id = $NomCob->id;
+                $vales->valor = $request['Vale'];
+                $vales->descripcion = "Vale ruta " . $request['IdRuta'];
+                $vales->fecha = Carbon::now()->toDateString();
+                $vales->flujo_caja_id = $fc->id;
+                $vales->save();
+            }
+        }
+
+        //Agregamos las Reversiones
+        if ($request['FlujoCaja']['Reversion'] > 0) {
+            $fc = new FlujoCaja;
+            $fc->descripcion = "Reversión ruta " . $request['IdRuta'];
+            $fc->tipo = 2;
+            $fc->valor = $request['FlujoCaja']['Reversion'];
             $fc->fecha = Carbon::now()->toDateString();
             $fc->save();
         }

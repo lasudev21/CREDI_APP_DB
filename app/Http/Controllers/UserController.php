@@ -48,11 +48,12 @@ class UserController extends Controller
                 $RolesDetalleDB = RolesDetalle::where([['rol_permiso_id', $rowRP->id], ['user_id', $userDB->id]])->get();
                 foreach ($RolesDetalleDB as $rowRD) {
                     $addRD = new RolesDetallesResponse;
-                    $addRD->Editar = $rowRD->editar;
+                    $addRD->Editar = $rowRD->editar ? $rowRD->editar : false;
                     $addRD->Id = $rowRD->id;
                     $addRD->RolPermisoId = $rowRD->rol_permiso_id;
                     $addRD->UserId = $rowRD->user_id;
-                    $addRD->Ver = $rowRD->ver;
+                    $addRD->Ver = $rowRD->ver ? $rowRD->ver : false;
+                    $addRD->Especial = $rowRD->especial ? $rowRD->especial : false;
                     array_push($rdr, $addRD);
                 }
 

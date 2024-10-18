@@ -81,6 +81,8 @@ Route::group(['middleware' => ['api']], function () {
 
         Route::group(['prefix' => 'reportes'], function () {
             Route::get('/coteos', [ReportesController::class, 'getCoteos']);
+            Route::post('/getReporteCuentas', [ReportesController::class, 'getReporteCuentas']);
+            Route::post('/postReporteCuentas', [ReportesController::class, 'postReporteCuentas']);
         });
 
         Route::group(['prefix' => 'nomina'], function () {
@@ -88,6 +90,7 @@ Route::group(['middleware' => ['api']], function () {
             Route::post('/verNomina', [NominaController::class, 'getNomina']);
             Route::post('/cobrador', [NominaController::class, 'postCobrador']);
             Route::get('/cobradores', [NominaController::class, 'getCobradores']);
+            Route::post('/deleteVale', [NominaController::class, 'deleteVale']);
         });
     });
 });

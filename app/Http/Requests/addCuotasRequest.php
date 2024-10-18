@@ -22,7 +22,9 @@ class addCuotasRequest extends Request
             'Nuevos' => '',
             'FlujoCaja' => 'required',
             'Abonos' => '',
-            'User' => 'required'
+            'Vale' => 'required',
+            'User' => 'required',
+            'Cobrador' => 'required'
         ];
     }
 }

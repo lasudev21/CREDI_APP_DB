@@ -30,17 +30,19 @@ class RolesDetalle extends Model
 		'rol_permiso_id' => 'int',
 		'user_id' => 'int',
 		'ver' => 'bool',
-		'editar' => 'bool'
+		'editar' => 'bool',
+		'especial' => 'bool'
 	];
 
 	protected $fillable = [
 		'rol_permiso_id',
 		'user_id',
 		'ver',
-		'editar'
+		'editar',
+		'especial'
 	];
 
-    public function roles_permiso()
+	public function roles_permiso()
 	{
 		return $this->belongsTo(RolesPermiso::class, 'rol_permiso_id');
 	}

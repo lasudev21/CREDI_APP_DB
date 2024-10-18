@@ -33,6 +33,7 @@ class CreditosDetalle extends Model
 	protected $casts = [
 		'credito_id' => 'int',
 		'usuario_id' => 'int',
+		'renovacion_id' => 'int',
 		'abono' => 'float',
 		'estado' => 'bool'
 	];
@@ -44,6 +45,7 @@ class CreditosDetalle extends Model
 	protected $fillable = [
 		'credito_id',
 		'usuario_id',
+		'renovacion_id',
 		'abono',
 		'fecha_abono',
 		'estado'

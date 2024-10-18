@@ -46,6 +46,7 @@ class RolesController extends Controller
                 $rolDet = RolesDetalle::find($row['idPermmision']);
                 $rolDet->ver = $row['ver'];
                 $rolDet->editar = $row['editar'];
+                $rolDet->especial = $row['especial'];
                 $rolDet->save();
             } else {
                 $newRolDet = new RolesDetalle();
@@ -53,6 +54,7 @@ class RolesController extends Controller
                 $newRolDet->user_id = $input["idUser"];
                 $newRolDet->ver = $row['ver'];
                 $newRolDet->editar = $row['editar'];
+                $newRolDet->especial = $row['especial'];
                 $newRolDet->save();
             }
         }

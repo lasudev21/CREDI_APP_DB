@@ -9,6 +9,7 @@ class RolesDetallesResponse
     public int $UserId;
     public bool $Ver;
     public bool $Editar;
+    public bool $Especial;
 
     public function __construct()
     {

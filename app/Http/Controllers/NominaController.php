@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FlujoCaja;
 use App\Models\Nomina;
 use App\Models\NominaCobrador;
 use App\Models\Parametro;
@@ -44,13 +45,25 @@ class NominaController extends Controller
                 $nominaCobrador->nomina_id = $nomina->id;
                 $nominaCobrador->cobrador_id = $nc['cobrador_id'];
                 $nominaCobrador->salario = $nc['salario'];
+                $nominaCobrador->eps = $nc['eps'];
                 $nominaCobrador->save();
+
                 foreach ($nc['vales'] as $vales) {
+                    //Creamos primero el registro en el flujo de caja
+                    $fc = new FlujoCaja();
+                    $fc->descripcion =  $vales['descripcion'];
+                    $fc->tipo = 2;
+                    $fc->valor = $vales['valor'];
+                    $fc->fecha = $vales['fecha'];
+                    $fc->save();
+
+                    //Luego lo creamos el registro y asociamos al flujo de caja
                     $vale = new Vale();
                     $vale->valor = $vales['valor'];
                     $vale->descripcion = $vales['descripcion'];
                     $vale->fecha = $vales['fecha'];
                     $vale->nomina_cobrador_id = $nominaCobrador->id;
+                    $vale->flujo_caja_id = $fc->id;
                     $vale->save();
                 }
             }
@@ -58,13 +71,12 @@ class NominaController extends Controller
             $nomina = Nomina::find($inputs['nomina_id']);
 
             foreach ($inputs['data'] as $nc) {
-                // var_dump($nc);
                 if ($nc['id'] !== 0) {
                     $nominaCobrador = NominaCobrador::find($nc['id']);
                     $nominaCobrador->ahorro = $nc['ahorro'];
-                    $nominaCobrador->cobrador_id = $nc['cobrador_id'];
                     $nominaCobrador->dias_laborados = $nc['dias_laborados'];
                     $nominaCobrador->salario = $nc['salario'];
+                    $nominaCobrador->eps = $nc['eps'];
                     $nominaCobrador->update();
                 } else {
                     $nominaCobrador = new NominaCobrador();
@@ -74,6 +86,7 @@ class NominaController extends Controller
                     $nominaCobrador->nomina_id = $nomina->id;
                     $nominaCobrador->cobrador_id = $nc['cobrador_id'];
                     $nominaCobrador->salario = $nc['salario'];
+                    $nominaCobrador->eps = $nc['eps'];
                     $nominaCobrador->save();
                 }
 
@@ -85,12 +98,27 @@ class NominaController extends Controller
                         $vale->fecha = $vales['fecha'];
                         $vale->nomina_cobrador_id = $nominaCobrador->id;
                         $vale->save();
+
+                        //Actualiza el registro de flujo de caja
+                        $fc = FlujoCaja::find($vale->flujo_caja_id);
+                        $fc->valor = $vales['valor'];
+                        $fc->save();
                     } else {
+                        //Creamos primero el registro en el flujo de caja
+                        $fc = new FlujoCaja();
+                        $fc->descripcion =  $vales['descripcion'];
+                        $fc->tipo = 2;
+                        $fc->valor = $vales['valor'];
+                        $fc->fecha = $vales['fecha'];
+                        $fc->save();
+
+                        //Luego lo creamos el registro y asociamos al flujo de caja
                         $vale = new Vale();
                         $vale->valor = $vales['valor'];
                         $vale->descripcion = $vales['descripcion'];
                         $vale->fecha = $vales['fecha'];
                         $vale->nomina_cobrador_id = $nominaCobrador->id;
+                        $vale->flujo_caja_id = $fc->id;
                         $vale->save();
                     }
                 }
@@ -141,6 +169,19 @@ class NominaController extends Controller
         else {
             $user = User::find($inputs['cobrador_id']);
             return response()->json(['data' => $user]);
+        }
+    }
+
+    public function deleteVale(Request $request)
+    {
+        $inputs = $request->all();
+
+        $vale = Vale::find($inputs['id']);
+        if ($vale) {
+            $vale->delete();
+            $fc = FlujoCaja::find($vale->flujo_caja_id);
+            $fc->delete();
+            return response()->json(['status' => true]);
         }
     }
 }
