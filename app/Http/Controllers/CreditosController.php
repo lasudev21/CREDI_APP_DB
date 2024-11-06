@@ -111,6 +111,9 @@ class CreditosController extends Controller
                 $credito->save();
             } else {
                 $credito = $creditos->find($cuotas['Id']);
+                if ($cuotas['Mora'] !== null) {
+                    $credito['mora'] = $cuotas['Mora'];
+                }
             }
 
             //Eliminamos la ultima cuota si el usuario lo decide

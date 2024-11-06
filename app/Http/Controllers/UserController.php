@@ -35,7 +35,7 @@ class UserController extends Controller
             $UserResponse->Nombres = $userDB->nombres;
             $UserResponse->Apellidos = $userDB->apellidos;
             $UserResponse->Telefono1 = $userDB->telefono1;
-            $UserResponse->Telefono2 = $userDB->telefono2;
+            $UserResponse->Telefono2 = $userDB->telefono2 !== null ? $userDB->telefono2 : $userDB->telefono1;
             $UserResponse->Login = $userDB->login;
             $UserResponse->Username = $userDB->username;
             $UserResponse->Rol = $userDB->rol;
