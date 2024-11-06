@@ -298,8 +298,8 @@ class CreditosController extends Controller
 
 
             $year = Carbon::now()->year;
-            $month = Carbon::now()->month;
-            $nomina = Nomina::where([['anio', $year], ['mes', $month]])->get();
+            $month = Carbon::now()->week;
+            $nomina = Nomina::where([['anio', $year], ['semana', $month]])->get();
 
             if ($nomina->isNotEmpty()) {
                 //Buscamos la NominaCobrador
@@ -329,7 +329,7 @@ class CreditosController extends Controller
             } else {
                 $newNom = new Nomina();
                 $newNom->anio = $year;
-                $newNom->mes = $month;
+                $newNom->semana = $month;
                 $newNom->save();
 
                 $NomCob = new NominaCobrador();

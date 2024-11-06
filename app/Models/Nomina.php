@@ -10,7 +10,7 @@ class Nomina extends Model
 
     protected $casts = [
         'anio' => 'int',
-        'mes' => 'int'
+        'semana' => 'int'
     ];
 
     protected $fillable = [

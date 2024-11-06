@@ -16,7 +16,7 @@ class NominaController extends Controller
     public function getNomina(Request $request)
     {
         $inputs = $request->all();
-        $nomina = Nomina::with('nomina_cobradores')->where([['anio', $inputs['year']], ['mes', $inputs['month']]])->get();
+        $nomina = Nomina::with('nomina_cobradores')->where([['anio', $inputs['year']], ['semana', $inputs['week']]])->get();
         if ($nomina->count() === 0)
             return response()->json(['data' => []]);
         else {
@@ -34,7 +34,7 @@ class NominaController extends Controller
         if ($inputs['nomina_id'] === 0) {
             $nomina = new Nomina();
             $nomina->anio = $inputs['anio'];
-            $nomina->mes = $inputs['mes'] + 1;
+            $nomina->semana = $inputs['semana'];
             $nomina->save();
 
             foreach ($inputs['data'] as $nc) {
