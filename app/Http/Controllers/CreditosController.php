@@ -200,7 +200,7 @@ class CreditosController extends Controller
                     if ($input['CalculoMoras']) {
                         if ($cuotas['Mora'] !== null) {
                             $credito['mora'] = $cuotas['Mora'];
-                            $credito['congelar'] = $credito['congelar'] <= 0 ? 0 : $credito['congelar'] - 1;
+                            $credito['congelar'] = 0;
                         } else {
                             if ($cuotas['Cuota'] == null) {
                                 $credito['mora'] = $credito['congelar'] > 0 ? $credito['mora'] : $credito['mora'] + 1;
