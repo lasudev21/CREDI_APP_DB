@@ -16,9 +16,16 @@ class ClientesController extends Controller
 {
     public function getClientes()
     {
-        $clientes = Cliente::with('clientes_referencias')->orderBy('created_at', 'DESC')->get();
+        $clientes = Cliente::orderBy('created_at', 'DESC')->get();
+
         $ca = Credito::where('activo', 1)->count();
         return response()->json(['data' => $clientes, 'creditosActivos' => $ca]);
+    }
+
+    public function getClientesReferencias($id)
+    {
+        $clientesReferencias = ClientesReferencia::where('cliente_id', $id)->get();
+        return response()->json(['data' => $clientesReferencias]);
     }
 
     public function saveCliente(Requests\ClienteRequest $request)
@@ -59,7 +66,8 @@ class ClientesController extends Controller
             $clienteRef->save();
         }
 
-        $clientes = Cliente::with('clientes_referencias')->orderBy('created_at', 'DESC')->get();
+        $clientes = Cliente::orderBy('created_at', 'DESC')->get();
+
         $ca = Credito::where('activo', 1)->count();
         return response()->json(['data' => $clientes, 'creditosActivos' => $ca]);
     }
@@ -102,7 +110,8 @@ class ClientesController extends Controller
         }
 
         $cliente->save();
-        $clientes = Cliente::with('clientes_referencias')->orderBy('created_at', 'DESC')->get();
+        $clientes = Cliente::orderBy('created_at', 'DESC')->get();
+
         $ca = Credito::where('activo', 1)->count();
         return response()->json(['data' => $clientes, 'creditosActivos' => $ca]);
     }
@@ -117,7 +126,8 @@ class ClientesController extends Controller
             return response()->json(['Error' => 'El cliente tiene actualmente un crédito activo'], 423);
         }
 
-        $clientes = Cliente::with('clientes_referencias')->orderBy('created_at', 'DESC')->get();
+        $clientes = Cliente::orderBy('created_at', 'DESC')->get();
+
         $ca = Credito::where('activo', 1)->count();
         return response()->json(['data' => $clientes, 'creditosActivos' => $ca]);
     }

@@ -46,6 +46,7 @@ Route::group(['middleware' => ['api']], function () {
 
         Route::group(['prefix' => 'clientes'], function () {
             Route::get('/', [ClientesController::class, 'getClientes']);
+            Route::get('/referencias/{id}', [ClientesController::class, 'getClientesReferencias']);
             Route::post('/', [ClientesController::class, 'saveCliente']);
             Route::post('/{id}', [ClientesController::class, 'changeState']);
             Route::get('/{id}', [ClientesController::class, 'getDetallesCredito']);
